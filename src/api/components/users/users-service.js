@@ -5,20 +5,37 @@ const { hashPassword, passwordMatched } = require('../../../utils/password');
  * Get list of users
  * @returns {Array}
  */
-async function getUsers() {
-  const users = await usersRepository.getUsers();
+async function getUsers(pageNumber, pageSize, search, sort) {
+  let filter = {};
+  let sortedData = {};
 
-  const results = [];
-  for (let i = 0; i < users.length; i += 1) {
-    const user = users[i];
-    results.push({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-    });
+  if (search) {
+    const [fieldName, searchKey] = search.split(':');
+    const escapedSearchKey = searchKey.replace(
+      /[-\/\\^$*+?.()|[\]{}]/g,
+      '\\$&'
+    );
+    filter[fieldName] = new RegExp(escapedSearchKey, 'i');
   }
 
-  return results;
+  if (sort) {
+    const [fieldName, sortOrder] = sort.split(':');
+    sortedData[fieldName] = sortOrder === 'desc' ? -1 : 1;
+  }
+
+  const users = await usersRepository.getUsers(
+    pageNumber,
+    pageSize,
+    filter,
+    sortedData
+  );
+
+  return users;
+}
+
+async function getTotalUsers() {
+  const totalUsers = await usersRepository.getTotalUsers();
+  return totalUsers;
 }
 
 /**
@@ -170,4 +187,5 @@ module.exports = {
   emailIsRegistered,
   checkPassword,
   changePassword,
+  getTotalUsers,
 };

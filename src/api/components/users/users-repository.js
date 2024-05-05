@@ -1,11 +1,22 @@
 const { User } = require('../../../models');
+const {
+  loginAttempts,
+  maxLoginAttempts,
+} = require('../../../models/users-schema');
 
 /**
  * Get a list of users
  * @returns {Promise}
  */
-async function getUsers() {
-  return User.find({});
+async function getUsers(pageNumber, pageSize, filter, sort) {
+  const skipCount = (pageNumber - 1) * pageSize;
+
+  let query = {};
+  if (filter) {
+    query = { $or: [filter] };
+  }
+
+  return User.find(query).sort(sort).skip(skipCount).limit(pageSize);
 }
 
 /**
@@ -15,6 +26,10 @@ async function getUsers() {
  */
 async function getUser(id) {
   return User.findById(id);
+}
+
+async function getTotalUsers() {
+  return User.countDocuments();
 }
 
 /**
@@ -29,6 +44,8 @@ async function createUser(name, email, password) {
     name,
     email,
     password,
+    loginAttempts: 0,
+    maxLoginAttempts: 5,
   });
 }
 
@@ -89,4 +106,5 @@ module.exports = {
   deleteUser,
   getUserByEmail,
   changePassword,
+  getTotalUsers,
 };

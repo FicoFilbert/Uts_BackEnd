@@ -12,6 +12,21 @@ async function login(request, response, next) {
   const { email, password } = request.body;
 
   try {
+    const user = await authenticationServices.getUserByEmail(email);
+
+    const { maxLoginAttempts, loginAttempts, lastFailedLogin } = user;
+
+    if (
+      loginAttempts >= maxLoginAttempts &&
+      loginLimitDuration(lastFailedLogin)
+    ) {
+      // kalo loginAttempts > 5, dan masih dalam 30 menit maka gagal
+      throw errorResponder(
+        errorTypes.FORBIDDEN,
+        'Too many failed login attempts. Please try again later.'
+      );
+    }
+
     // Check login credentials
     const loginSuccess = await authenticationServices.checkLoginCredentials(
       email,
@@ -19,6 +34,7 @@ async function login(request, response, next) {
     );
 
     if (!loginSuccess) {
+      await authenticationServices.updateLoginAttempts(email);
       throw errorResponder(
         errorTypes.INVALID_CREDENTIALS,
         'Wrong email or password'
@@ -29,6 +45,12 @@ async function login(request, response, next) {
   } catch (error) {
     return next(error);
   }
+}
+
+function loginLimitDuration(timestamp) {
+  const THIRTY_MINUTES = 30 * 60 * 1000; // 30 minutes in milliseconds
+  const lastFailedLogin = new Date(timestamp);
+  return Date.now() - lastFailedLogin <= THIRTY_MINUTES;
 }
 
 module.exports = {

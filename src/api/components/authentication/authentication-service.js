@@ -22,6 +22,7 @@ async function checkLoginCredentials(email, password) {
   // login attempt as successful when the `user` is found (by email) and
   // the password matches.
   if (user && passwordChecked) {
+    await this.resetLoginAttempts(user.email); // reset loginAttempts to 0
     return {
       email: user.email,
       name: user.name,
@@ -33,6 +34,25 @@ async function checkLoginCredentials(email, password) {
   return null;
 }
 
+async function getUserByEmail(email) {
+  const user = await authenticationRepository.getUserByEmail(email);
+  return user;
+}
+
+async function updateLoginAttempts(email) {
+  const user = await authenticationRepository.updateLoginAttempts(email);
+  return user;
+}
+
+async function resetLoginAttempts(email) {
+  const user = await authenticationRepository.resetLoginAttempts(email);
+  console.log(email, user);
+  return user;
+}
+
 module.exports = {
   checkLoginCredentials,
+  getUserByEmail,
+  updateLoginAttempts,
+  resetLoginAttempts,
 };
